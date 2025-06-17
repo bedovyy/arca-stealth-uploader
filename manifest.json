@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Stealth Info",
+  "description": "Add stealth info during image upload",
+  "version": "1.0",
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "permissions": [],
+  "content_scripts": [
+    {
+      "js": ["content.js"],
+      "matches": ["https://arca.live/b/*"]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["exif-reader.js", "stealth-pnginfo.js", "pnginfo.js", "injected-script.js"],
+      "matches": ["https://arca.live/*"]
+    }
+  ]
+}
