@@ -1,22 +1,48 @@
 {
   "manifest_version": 3,
-  "name": "Stealth Info",
+  "name": "Arca Stealth Info",
   "description": "Add stealth info during image upload",
   "version": "1.0",
-  "action": {
-    "default_popup": "popup.html"
+  "background": {
+    "service_worker": "background.js"
   },
-  "permissions": [],
+  "permissions": [
+    "contextMenus",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://*/*",
+    "http://*/*"
+  ],
   "content_scripts": [
     {
-      "js": ["content.js"],
-      "matches": ["https://arca.live/b/*"]
+      "js": [
+        "lib/exif-reader.js",
+        "lib/pako.min.js",
+        "stealth-pnginfo.js",
+        "image-metadata.js",
+        "webui-metadata-to-json.js",
+        "modal.js",
+        "content.js"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["exif-reader.js", "stealth-pnginfo.js", "pnginfo.js", "injected-script.js"],
-      "matches": ["https://arca.live/*"]
+      "resources": [
+        "lib/exif-reader.js",
+        "lib/pako.min.js",
+        "stealth-pnginfo.js",
+        "image-metadata.js",
+        "injected-script.js"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ]
 }
