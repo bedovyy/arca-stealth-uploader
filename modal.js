@@ -1,6 +1,6 @@
 const style = document.createElement('style');
 style.textContent = `
-  .metadata-modal {
+  .aimetadataviewer-modal {
     position: absolute;
     top: 0;
     left: 0;
@@ -15,22 +15,22 @@ style.textContent = `
     display: none;
     font-size: 1rem;
   }
-  .metadata-modal-content {
+  .aimetadataviewer-modal-content {
     position: relative;
     font-size: 0.8rem;
     overflow: auto;
   }
-  .metadata-modal-title {
+  .aimetadataviewer-modal-title {
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
-  .metadata-modal-buttons {
+  .aimetadataviewer-modal-buttons {
     display: flex;
     padding: 4px;
     gap: 4px;
   }
-  .metadata-modal-buttons>* {
+  .aimetadataviewer-modal-buttons>* {
     border: 1px solid white;
     border-radius: 4px;
     padding: 2px;
@@ -38,34 +38,34 @@ style.textContent = `
     cursor: pointer;
     text-decoration: none !important;
   }
-  .metadata-modal-text {
+  .aimetadataviewer-modal-text {
     margin-top: 20px;
     white-space: pre-wrap;
     word-break: break-all;
   }
 
-  .metadata-modal-table {
+  .aimetadataviewer-modal-table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 10px;
     color: white;
     background-color: rgba(0,0,0,0.2);
   }
-  .metadata-modal-table th, .metadata-modal-table td {
+  .aimetadataviewer-modal-table th, .aimetadataviewer-modal-table td {
     border: 1px solid rgba(255,255,255,0.2);
     padding: 6px 8px;
     text-align: left;
     word-break: break-all;
     min-width: 200px;
   }
-  .metadata-modal-table th {
+  .aimetadataviewer-modal-table th {
     background-color: rgba(0,0,0,0.3);
   }
-  .metadata-modal-table tr:nth-child(even) {
+  .aimetadataviewer-modal-table tr:nth-child(even) {
     background-color: rgba(0,0,0,0.1);
   }
 
-  .toast {
+  .aimetadataviewer-toast {
     position: fixed;
     top: 50%;
     left: 50%;
@@ -80,40 +80,40 @@ style.textContent = `
     transition: opacity 0.3s ease;
     pointer-events: none;
   }
-  .toast.show {
+  .aimetadataviewer-toast.show {
     opacity: 1;
   }
 `;
 document.head.appendChild(style);
 
-let modal = document.getElementById('metadata-modal');
+let modal = document.getElementById('aimetadataviewer-modal');
 if (!modal) {
   modal = document.createElement('div');
-  modal.id = 'metadata-modal';
-  modal.className = 'metadata-modal';
+  modal.id = 'aimetadataviewer-modal';
+  modal.className = 'aimetadataviewer-modal';
   modal.innerHTML = `
-    <div class="metadata-modal-title">
-      Metadata
-      <div class="metadata-modal-type"></div>
-      <div class="metadata-modal-buttons">
-        <div class="metadata-modal-copy-workflow">Copy workflow</div>
-        <a class="metadata-modal-download">💾</a>
-        <div class="metadata-modal-close">❌</div>
+    <div class="aimetadataviewer-modal-title">
+      aimetadataviewer
+      <div class="aimetadataviewer-modal-type"></div>
+      <div class="aimetadataviewer-modal-buttons">
+        <div class="aimetadataviewer-modal-copy-workflow">Copy workflow</div>
+        <a class="aimetadataviewer-modal-download">💾</a>
+        <div class="aimetadataviewer-modal-close">❌</div>
       </div>
     </div>
-    <div class="metadata-modal-content">
+    <div class="aimetadataviewer-modal-content">
       <!-- content -->
     </div>
   `;
   document.body.appendChild(modal);
-  modal.querySelector('.metadata-modal-close').onclick = () => modal.style.display = 'none';
+  modal.querySelector('.aimetadataviewer-modal-close').onclick = () => modal.style.display = 'none';
 }
 
 function showToast(message, duration = 1000) {
-  let toast = document.querySelector('.toast');
+  let toast = document.querySelector('.aimetadataviewer-toast');
   if (!toast) {
     toast = document.createElement('div');
-    toast.className = 'toast';
+    toast.className = 'aimetadataviewer-toast';
     document.body.appendChild(toast);
   }
   toast.textContent = message;
@@ -129,7 +129,7 @@ function jsonToTable(json) {
     throw new Error('no object found');
   }
   const keys = Object.keys(json);
-  let html = '<table class="metadata-modal-table"><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody>';
+  let html = '<table class="aimetadataviewer-modal-table"><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody>';
   keys.forEach(key => {
     let value = json[key];
     if (value === null || value === undefined) {
@@ -155,7 +155,7 @@ function mergeCommentToMetadata(metadata) {
   }
 }
 
-function showMetadataModal(img, metadata, type, imageObject) {
+function showModal(img, metadata, type, imageObject) {
   if (!metadata) {
     showToast("No metadata found.");
     return;
@@ -179,17 +179,17 @@ function showMetadataModal(img, metadata, type, imageObject) {
   }
 
   modal.style.display = 'flex';
-  modal.querySelector('.metadata-modal-type').textContent = type;
+  modal.querySelector('.aimetadataviewer-modal-type').textContent = type;
 
-  const copyBtn = modal.querySelector('.metadata-modal-copy-workflow');
+  const copyBtn = modal.querySelector('.aimetadataviewer-modal-copy-workflow');
   copyBtn.style.display = 'none';
 
-  const downloadBtn = modal.querySelector('.metadata-modal-download');
+  const downloadBtn = modal.querySelector('.aimetadataviewer-modal-download');
   downloadBtn.href = imageObject.src;
   downloadBtn.download = imageObject.name;
   downloadBtn.setAttribute('target', '_blank');
 
-  const content = modal.querySelector('.metadata-modal-content');
+  const content = modal.querySelector('.aimetadataviewer-modal-content');
   content.innerHTML = '';
 
   if (typeof metadata === 'object') {
@@ -216,7 +216,7 @@ function showMetadataModal(img, metadata, type, imageObject) {
     content.innerHTML = jsonToTable(metadata);
   } else {
     const pre = document.createElement('pre');
-    pre.className = 'metadata-modal-text';
+    pre.className = 'aimetadataviewer-modal-text';
     pre.textContent = JSON.stringify(metadata);
     content.appendChild(pre);
   }

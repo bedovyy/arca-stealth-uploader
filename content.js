@@ -77,7 +77,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             }
           }
         }
-        showMetadataModal(targetImg, metadata, type, imageObject);
+        showModal(targetImg, metadata, type, imageObject);
         sendResponse({ metadata });
       } catch (e) {
         console.error(e);
