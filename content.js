@@ -8,7 +8,7 @@ function base64ToArrayBuffer(base64) {
   return bytes.buffer;
 }
 
-async function extractImageMetadataFromBuffer(buffer, contentType) {
+async function extractImageMetadataFromBuffer(buffer, contentType, img) {
   let metadata = null;
   let type = "unknown";
   if (contentType === "image/png") {
@@ -20,13 +20,6 @@ async function extractImageMetadataFromBuffer(buffer, contentType) {
   }
 
   if (!metadata || metadata == "{}") {
-    const blob = new Blob([buffer], { type: contentType });
-    const img = new Image();
-    img.src = URL.createObjectURL(blob);
-    await new Promise((resolve, reject) => {
-      img.onload = resolve;
-      img.onerror = reject;
-    });
     metadata = await extractAlphaData(img);
     if (metadata) {
       type = "Alpha";
@@ -39,9 +32,7 @@ async function extractImageMetadataFromBuffer(buffer, contentType) {
       if (metadata["Software"]) {           // NAI
         type = `NovelAI (${type})`;
       } else if (metadata["prompt"]) {      // ComfyUI
-        const target = metadata["workflow"] ? "workflow" : "prompt";
-        metadata = JSON.parse(metadata[target]);
-        type = `ComfyUI ${target} (${type})`;
+        type = `ComfyUI (${type})`;
       }
     } catch (e) {
       try {                                 // WebUI
@@ -53,12 +44,25 @@ async function extractImageMetadataFromBuffer(buffer, contentType) {
   return { metadata, type };
 }
 
+let imageObject = null;
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "extractMetadata") {
     (async () => {
       try {
         const buffer = base64ToArrayBuffer(request.base64);
-        let { metadata, type } = await extractImageMetadataFromBuffer(buffer, request.contentType);
+        const blob = new Blob([buffer], { type: request.contentType });
+        if (imageObject) {
+          URL.revokeObjectURL(imageObject.src);
+          imageObject.remove();
+        }
+        imageObject = new Image();
+        imageObject.src = URL.createObjectURL(blob);
+        imageObject.name = request.imageUrl.split('/').pop().split('?')[0];
+        await new Promise((resolve, reject) => {
+          imageObject.onload = resolve;
+          imageObject.onerror = reject;
+        });
+        let { metadata, type } = await extractImageMetadataFromBuffer(buffer, request.contentType, imageObject);
 
         const imgs = Array.from(document.querySelectorAll('img'));
         const targetImg = imgs.find(img => img.src === request.imageUrl);
@@ -73,7 +77,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             }
           }
         }
-        showMetadataModal(targetImg, metadata, type);
+        showMetadataModal(targetImg, metadata, type, imageObject);
         sendResponse({ metadata });
       } catch (e) {
         console.error(e);
@@ -95,7 +99,7 @@ function injectScript(url) {
 }
 
 // only on arcalive write page.
-if (window.location.href.startsWith('https://arca.live/b/aiart/write')) {
+if (new RegExp('^https://arca\\.live/b/[^/]+/write').test(window.location.href)) {
   (async () => {
     await injectScript('lib/pako.min.js');
     await injectScript('lib/exif-reader.js');

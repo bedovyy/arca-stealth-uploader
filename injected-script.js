@@ -85,7 +85,7 @@ async function handleFiles(files) {
             canvas.toBlob(blob => {
               resizedFile = new File([blob], file.name, { type: file.type });
               resolve();
-            }, file.type);
+            }, true);
           });
         });
       }

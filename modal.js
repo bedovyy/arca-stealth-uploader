@@ -30,12 +30,13 @@ style.textContent = `
     padding: 4px;
     gap: 4px;
   }
-  .metadata-modal-buttons>div {
+  .metadata-modal-buttons>* {
     border: 1px solid white;
     border-radius: 4px;
     padding: 2px;
-    font-size: 0.75rem;    
+    font-size: 1rem;    
     cursor: pointer;
+    text-decoration: none !important;
   }
   .metadata-modal-text {
     margin-top: 20px;
@@ -96,6 +97,7 @@ if (!modal) {
       <div class="metadata-modal-type"></div>
       <div class="metadata-modal-buttons">
         <div class="metadata-modal-copy-workflow">Copy workflow</div>
+        <a class="metadata-modal-download">💾</a>
         <div class="metadata-modal-close">❌</div>
       </div>
     </div>
@@ -153,34 +155,60 @@ function mergeCommentToMetadata(metadata) {
   }
 }
 
-function showMetadataModal(img, metadata, type) {
+function showMetadataModal(img, metadata, type, imageObject) {
+  if (!metadata) {
+    showToast("No metadata found.");
+    return;
+  }
   const rect = img.getBoundingClientRect();
   const absoluteTop = rect.top + window.scrollY;
   const absoluteLeft = rect.left + window.scrollX;
 
-  modal.style.top = `${absoluteTop}px`;
-  modal.style.left = `${absoluteLeft}px`;
-  modal.style.width = `${rect.width}px`;
-  modal.style.maxHeight = `${rect.height}px`;
+  if (rect.width > 800) {
+    modal.style.top = `${absoluteTop}px`;
+    modal.style.left = `${absoluteLeft}px`;
+    modal.style.width = `${rect.width}px`;
+    modal.style.height = `${rect.height}px`;
+  } else {
+    modal.style.top = `20%`;
+    modal.style.left = `20%`;
+    modal.style.width = `60%`;
+    modal.style.height = `60%`;
+    modal.style.position = 'fixed';
+    modal.style.backgroundColor = 'rgba(0, 0, 0, 0.75)';
+  }
+
   modal.style.display = 'flex';
   modal.querySelector('.metadata-modal-type').textContent = type;
 
   const copyBtn = modal.querySelector('.metadata-modal-copy-workflow');
   copyBtn.style.display = 'none';
 
+  const downloadBtn = modal.querySelector('.metadata-modal-download');
+  downloadBtn.href = imageObject.src;
+  downloadBtn.download = imageObject.name;
+  downloadBtn.setAttribute('target', '_blank');
+
   const content = modal.querySelector('.metadata-modal-content');
   content.innerHTML = '';
 
-  if (typeof metadata === 'object' && metadata !== null) {
+  if (typeof metadata === 'object') {
     // show 'copy workflow' button if ComfyUI workflow.
-    if (type.includes('workflow')) {
-      copyBtn.style.display = '';
-      copyBtn.onclick = async () => {
-        try {
-          await navigator.clipboard.writeText(JSON.stringify(metadata));
-          showToast("Workflow Copied!");
-        } catch (err) { /* do nothing */  }
-      };
+    if (type.includes('ComfyUI')) {
+      const workflow = metadata["workflow"];
+      const prompt = metadata["prompt"];
+
+      if (workflow) {
+        copyBtn.style.display = '';
+        copyBtn.onclick = async () => {
+          try {
+            await navigator.clipboard.writeText(workflow);
+            showToast("Workflow Copied!");
+          } catch (err) { /* do nothing */  }
+        };
+      }
+
+      metadata = JSON.parse(prompt || workflow);
     }
 
     // flatten "Comment" on base metadata json.
@@ -189,7 +217,7 @@ function showMetadataModal(img, metadata, type) {
   } else {
     const pre = document.createElement('pre');
     pre.className = 'metadata-modal-text';
-    pre.textContent = (metadata) ? JSON.stringify(metadata) : 'no metadata';
+    pre.textContent = JSON.stringify(metadata);
     content.appendChild(pre);
   }
 }
