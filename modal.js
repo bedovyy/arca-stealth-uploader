@@ -33,8 +33,9 @@ style.textContent = `
   .aimetadataviewer-modal-buttons>* {
     border: 1px solid white;
     border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     padding: 2px;
-    font-size: 1rem;    
+    font-size: 1rem;
     cursor: pointer;
     text-decoration: none !important;
   }
@@ -93,7 +94,7 @@ if (!modal) {
   modal.className = 'aimetadataviewer-modal';
   modal.innerHTML = `
     <div class="aimetadataviewer-modal-title">
-      aimetadataviewer
+      Metadata
       <div class="aimetadataviewer-modal-type"></div>
       <div class="aimetadataviewer-modal-buttons">
         <div class="aimetadataviewer-modal-copy-workflow">Copy workflow</div>
@@ -204,7 +205,7 @@ function showModal(img, metadata, type, imageObject) {
           try {
             await navigator.clipboard.writeText(workflow);
             showToast("Workflow Copied!");
-          } catch (err) { /* do nothing */  }
+          } catch (err) { /* do nothing */ }
         };
       }
 
