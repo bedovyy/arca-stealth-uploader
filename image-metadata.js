@@ -11,6 +11,7 @@ async function extractPngMetadata(arrayBuffer) {
   const dataView = new DataView(arrayBuffer);
   let offset = 8;
   const textChunks = [];
+  const decoder = new TextDecoder('utf-8', { fatal: false });
   while (offset < arrayBuffer.byteLength) {
     const length = dataView.getUint32(offset);
     const type = String.fromCharCode(
@@ -22,8 +23,8 @@ async function extractPngMetadata(arrayBuffer) {
     if (type === 'tEXt') {
       const textData = new Uint8Array(arrayBuffer, offset + 8, length);
       const nullIndex = textData.indexOf(0);
-      const keyword = String.fromCharCode(...textData.subarray(0, nullIndex));
-      const value = String.fromCharCode(...textData.subarray(nullIndex + 1));
+      const keyword = decoder.decode(textData.subarray(0, nullIndex));
+      const value = decoder.decode(textData.subarray(nullIndex + 1));
       textChunks.push({ keyword, value });
     }
     offset += 12 + length;
