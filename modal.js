@@ -85,6 +85,12 @@ style.textContent = `
   .aimetadataviewer-toast.show {
     opacity: 1;
   }
+
+  #sandbox-litegraph-iframe {
+    width: 100%;
+    height: 600px;
+    border: 1px solid white;
+  }
 `;
 document.head.appendChild(style);
 
@@ -164,9 +170,6 @@ function loadGraphInSandbox(metadata) {
   iframe.id = 'sandbox-litegraph-iframe';
   iframe.src = chrome.runtime.getURL('sandbox-litegraph.html');
   iframe.sandbox = 'allow-scripts';
-  iframe.style.width = '100%';
-  iframe.style.height = '600px';
-  iframe.style.border = 'none';
 
   let retryCount = 5;
   const checkLoaded = () => {
@@ -191,7 +194,7 @@ function showModal(img, metadata, type, imageObject) {
   const absoluteTop = rect.top + window.scrollY;
   const absoluteLeft = rect.left + window.scrollX;
 
-  if (rect.width > 800) {
+  if (rect.width > 800 && !type.includes('ComfyUI')) {
     modal.style.top = `${absoluteTop}px`;
     modal.style.left = `${absoluteLeft}px`;
     modal.style.width = `${rect.width}px`;

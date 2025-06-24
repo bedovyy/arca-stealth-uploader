@@ -4,6 +4,11 @@
 <head>
   <script type="text/javascript" src="lib/litegraph.core.min.js"></script>
   <style>
+    body {
+      margin: auto;
+      padding: 0;
+      overflow: hidden;
+    }
     .graphdialog {
       position: absolute;
       left: 20% !important;
@@ -46,7 +51,7 @@
     }
   </style>
 </head>
-<body style="margin: auto; padding: 0; overflow: hidden;">
+<body>
   <canvas id="mycanvas" width="1200" height="600" style="width: 100%; height: 100%;"></canvas>
   <script>
     var graph = new LGraph();
@@ -69,7 +74,7 @@
     window.addEventListener('resize', resizeCanvasToParent);
     window.addEventListener('load', resizeCanvasToParent);
 
-    window.addEventListener('message', function(event) {
+    window.addEventListener('message', function (event) {
       try {
         var metadata = event.data;
         const workflow = JSON.parse(metadata.workflow);
@@ -79,10 +84,46 @@
           return;
         }
         loadGraphFromJSON(graph, workflow, prompt);
+        resizeCanvasToParent();
+        zoomToFitAllNodes(graph, canvas);
       } catch (e) {
-        console.error("Invalid graph data");
+        console.error("Invalid graph data", e);
       }
     });
+
+    function zoomToFitAllNodes(graph, canvas) {
+      let minX = Infinity;
+      let minY = Infinity;
+      let maxX = -Infinity;
+      let maxY = -Infinity;
+
+      for (let node of graph._nodes) {
+        let nodeX = node.pos[0];
+        let nodeY = node.pos[1];
+        let nodeWidth = node.size[0];
+        let nodeHeight = node.size[1];
+        minX = Math.min(minX, nodeX);
+        minY = Math.min(minY, nodeY);
+        maxX = Math.max(maxX, nodeX + nodeWidth);
+        maxY = Math.max(maxY, nodeY + nodeHeight);
+      }
+
+      let graphWidth = maxX - minX;
+      let graphHeight = maxY - minY;
+      let canvasWidth = canvas.canvas.width;
+      let canvasHeight = canvas.canvas.height;
+      let scaleX = canvasWidth / graphWidth;
+      let scaleY = canvasHeight / graphHeight;
+      let newScale = Math.min(scaleX, scaleY);
+      let centerX = minX + graphWidth / 2;
+      let centerY = minY + graphHeight / 2;
+      let offsetX = canvasWidth / 2 / newScale - centerX;
+      let offsetY = canvasHeight / 2 / newScale - centerY;
+
+      canvas.ds.scale = newScale;
+      canvas.ds.offset = [offsetX, offsetY];
+      canvas.draw(true);
+    }
 
     function loadGraphFromJSON(graph, workflow, prompt) {
       const nodeMap = {};
@@ -119,12 +160,12 @@
     }
 
     function createDynamicNodeClass(nodeInfo, prompt) {
-      return function() {
+      return function () {
         this.title = nodeInfo.properties["Node name for S&R"] || nodeInfo.type;
         this.size = nodeInfo.size || [200, 60];
         (nodeInfo.inputs || []).forEach(input => this.addInput(input.name, input.type));
         (nodeInfo.outputs || []).forEach(output => this.addOutput(output.name, output.type));
-        
+
         if (nodeInfo.widgets_values) {
           nodeInfo.widgets_values.forEach((value, i) => {
             let key = "value_" + i;
@@ -133,13 +174,13 @@
             } catch (e) {
               console.error("error on", prompt);
             }
-            
+
             const options = {};
-            if (value.length > 20) {
+            if (value?.length > 20) {
               options.multiline = true;
             }
             if (!nodeInfo.inputs.map(input => input.name).includes(key)) {
-              this.addWidget("text", key, value, function(v) {}, options);
+              this.addWidget("text", key, value, function (v) { }, options);
             }
           });
         }
