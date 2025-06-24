@@ -24,6 +24,7 @@ style.textContent = `
     display: flex;
     justify-content: space-between;
     align-items: center;
+    user-select: none;
   }
   .aimetadataviewer-modal-buttons {
     display: flex;
@@ -156,6 +157,31 @@ function mergeCommentToMetadata(metadata) {
   }
 }
 
+
+function loadGraphInSandbox(metadata) {
+  // 1. iframe 생성 및 content에 추가
+  const iframe = document.createElement('iframe');
+  iframe.id = 'sandbox-litegraph-iframe';
+  iframe.src = chrome.runtime.getURL('sandbox-litegraph.html');
+  iframe.sandbox = 'allow-scripts';
+  iframe.style.width = '100%';
+  iframe.style.height = '600px';
+  iframe.style.border = 'none';
+
+  let retryCount = 5;
+  const checkLoaded = () => {
+    try {
+      document.getElementById('sandbox-litegraph-iframe').contentWindow.postMessage(metadata, '*');
+    } catch (e) {
+      if (retryCount-- > 0) setTimeout(checkLoaded, 100);
+    }
+  };
+  setTimeout(checkLoaded, 100);
+
+  return iframe;
+}
+
+
 function showModal(img, metadata, type, imageObject) {
   if (!metadata) {
     showToast("No metadata found.");
@@ -207,6 +233,9 @@ function showModal(img, metadata, type, imageObject) {
             showToast("Workflow Copied!");
           } catch (err) { /* do nothing */ }
         };
+
+        const iframe = loadGraphInSandbox(metadata);
+        content.appendChild(iframe);
       }
 
       metadata = JSON.parse(prompt || workflow);
@@ -214,7 +243,7 @@ function showModal(img, metadata, type, imageObject) {
 
     // flatten "Comment" on base metadata json.
     metadata = mergeCommentToMetadata(metadata);
-    content.innerHTML = jsonToTable(metadata);
+    content.innerHTML += jsonToTable(metadata);
   } else {
     const pre = document.createElement('pre');
     pre.className = 'aimetadataviewer-modal-text';

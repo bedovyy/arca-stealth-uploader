@@ -1,0 +1,150 @@
+<!-- sandbox-litegraph.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <script type="text/javascript" src="lib/litegraph.core.min.js"></script>
+  <style>
+    .graphdialog {
+      position: absolute;
+      left: 20% !important;
+      top: 30% !important;
+      width: 60%;
+      height: 40%;
+      min-height: 200px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+
+      padding: 30px;
+      font-size: 1.25rem;
+      color: white;
+      background-color: #000000aa;
+      border-radius: 16px;
+    }
+    .graphdialog>input {
+      background-color: #ddd;
+      z-index: 1;
+      pointer-events: none;
+      user-select: none;
+      font-size: 1.25rem;
+    }
+    .graphdialog>textarea {
+      background-color: #ddd;
+      width: 80%;
+      height: 80%;
+      z-index: 1;
+      font-size: 1rem;
+    }
+    .graphdialog>button {
+      position: absolute;
+      width: 100vw;
+      height: 100vh;
+      color: transparent;
+      background: none;
+      border: none;
+    }
+  </style>
+</head>
+<body style="margin: auto; padding: 0; overflow: hidden;">
+  <canvas id="mycanvas" width="1200" height="600" style="width: 100%; height: 100%;"></canvas>
+  <script>
+    var graph = new LGraph();
+    var canvas = new LGraphCanvas("#mycanvas", graph);
+    canvas.allow_searchbox = false;
+    canvas.allow_dragnodes = false;
+    canvas.allow_reconnect_links = false;
+
+    function resizeCanvasToParent() {
+      const canvas = document.getElementById('mycanvas');
+      if (window.frameElement) {
+        const iframe = window.frameElement;
+        canvas.width = iframe.clientWidth;
+        canvas.height = iframe.clientHeight;
+      } else {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+    }
+    window.addEventListener('resize', resizeCanvasToParent);
+    window.addEventListener('load', resizeCanvasToParent);
+
+    window.addEventListener('message', function(event) {
+      try {
+        var metadata = event.data;
+        const workflow = JSON.parse(metadata.workflow);
+        const prompt = JSON.parse(metadata.prompt);
+        if (!workflow.nodes || !workflow.links) {
+          console.error("Invalid graph data");
+          return;
+        }
+        loadGraphFromJSON(graph, workflow, prompt);
+      } catch (e) {
+        console.error("Invalid graph data");
+      }
+    });
+
+    function loadGraphFromJSON(graph, workflow, prompt) {
+      const nodeMap = {};
+      workflow.nodes.forEach(nodeInfo => {
+        if (!LiteGraph.registered_node_types[nodeInfo.type]) {
+          const nodeClass = createDynamicNodeClass(nodeInfo, prompt[nodeInfo.id]);
+          LiteGraph.registerNodeType(nodeInfo.type, nodeClass);
+        }
+        const node = LiteGraph.createNode(nodeInfo.type);
+        node.pos = nodeInfo.pos;
+        node.size = nodeInfo.size;
+        node.resizable = false;
+        if (nodeInfo.widgets_values && node.widgets) {
+          nodeInfo.widgets_values.forEach((value, i) => {
+            if (node.widgets[i]) node.widgets[i].value = value;
+          });
+        }
+        if (nodeInfo.properties) {
+          Object.assign(node.properties, nodeInfo.properties);
+        }
+        node.flags.collapsed = nodeInfo.flags?.collapsed;
+        graph.add(node);
+        nodeMap[nodeInfo.id] = node;
+      });
+
+      workflow.links.forEach(link => {
+        const [_, srcNodeId, srcSlot, dstNodeId, dstSlot] = link;
+        const srcNode = nodeMap[srcNodeId];
+        const dstNode = nodeMap[dstNodeId];
+        if (srcNode && dstNode) {
+          srcNode.connect(srcSlot, dstNode, dstSlot);
+        }
+      });
+    }
+
+    function createDynamicNodeClass(nodeInfo, prompt) {
+      return function() {
+        this.title = nodeInfo.properties["Node name for S&R"] || nodeInfo.type;
+        this.size = nodeInfo.size || [200, 60];
+        (nodeInfo.inputs || []).forEach(input => this.addInput(input.name, input.type));
+        (nodeInfo.outputs || []).forEach(output => this.addOutput(output.name, output.type));
+        
+        if (nodeInfo.widgets_values) {
+          nodeInfo.widgets_values.forEach((value, i) => {
+            let key = "value_" + i;
+            try {
+              key = Object.keys(prompt?.inputs)[i];
+            } catch (e) {
+              console.error("error on", prompt);
+            }
+            
+            const options = {};
+            if (value.length > 20) {
+              options.multiline = true;
+            }
+            if (!nodeInfo.inputs.map(input => input.name).includes(key)) {
+              this.addWidget("text", key, value, function(v) {}, options);
+            }
+          });
+        }
+      };
+    }
+  </script>
+</body>
+</html>
